@@ -2,9 +2,14 @@
 
 基于 Python + PySide6 的 Windows 桌面水准测量数据处理软件，支持闭合/附合水准路线计算、闭合差评定、重复观测误差分析与 CSV / Excel 成果导出。项目使用项目级 `.venv` 管理环境，代码位于 `src` 目录并按业务层、服务层、界面层分层。
 
-## 下载
+## 下载与运行
 
-Windows 安装包请前往 [Releases](https://github.com/sqqsnb888-code/surveying-data-manager/releases)。
+前往 [Releases](https://github.com/sqqsnb888-code/surveying-data-manager/releases) 下载：
+
+- `SurveyingDataManager.exe`：免安装单文件，下载后双击即可运行，不需要安装。
+- `SurveyingDataManager-Setup-1.1.0.exe`：Windows 安装版，会创建快捷方式并提供卸载程序。
+
+`Source code (zip/tar.gz)` 是项目源码，普通用户不需要下载。
 
 ## 功能
 
@@ -17,7 +22,7 @@ Windows 安装包请前往 [Releases](https://github.com/sqqsnb888-code/surveyin
 - 导出带 BOM 的 CSV、格式化的 Excel 工作簿（工程概况、水准计算、误差分析）
 - 工程文件保存与打开（JSON），包含测段、控制点和观测列
 - 未保存更改提示、新建 / 打开 / 保存 / 另存为、快捷键和示例数据
-- 使用 PySide6 `pyside6-deploy` + Inno Setup 打包为 Windows 安装程序
+- 可打包为免安装单文件或 Windows 安装程序
 
 ## 环境
 
@@ -72,7 +77,7 @@ py -3.13 -m venv .venv
 │  ├─ setup.iss               # Inno Setup 安装包脚本
 │  └─ ChineseSimplified.isl   # 安装向导简体中文
 ├─ scripts/
-│  ├─ build.ps1               # 应用文件构建脚本
+│  ├─ build.ps1               # 应用文件/免安装单文件构建脚本
 │  ├─ build_installer.ps1     # 安装包构建脚本
 │  └─ install-readme.txt      # 安装后说明
 ├─ src/
@@ -113,6 +118,20 @@ $env:QT_QPA_PLATFORM = "offscreen"
 
 测试覆盖水准计算、限差判定、观测统计、粗差检测、工程文件读写、CSV / Excel 导出和界面冒烟。
 
+## 构建免安装单文件
+
+```powershell
+.\scripts\build.ps1 -SingleFile
+```
+
+输出：
+
+```text
+dist\SurveyingDataManager.exe
+```
+
+双击即可运行，不需要安装 Python 或配置环境，也不需要安装本软件。
+
 ## 构建 Windows 安装包
 
 先构建应用文件：
@@ -127,7 +146,7 @@ $env:QT_QPA_PLATFORM = "offscreen"
 .\scripts\build_installer.ps1
 ```
 
-最终输出：
+输出：
 
 ```text
 dist\SurveyingDataManager-Setup-1.1.0.exe

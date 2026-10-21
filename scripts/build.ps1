@@ -1,6 +1,7 @@
 ﻿param(
     [string]$IndexUrl = "",
-    [switch]$SkipInstall
+    [switch]$SkipInstall,
+    [switch]$SingleFile
 )
 
 $ErrorActionPreference = "Stop"
@@ -113,3 +114,26 @@ Rename-Item -LiteralPath (Join-Path $appDir "main.exe") -NewName "SurveyingDataM
 Remove-Item -LiteralPath $builtApp -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "应用文件完成：$appDir"
+
+if ($SingleFile) {
+    Push-Location $buildRoot
+    try {
+        & (Join-Path $buildRoot ".venv\Scripts\pyside6-deploy.exe") `
+            -c (Join-Path $buildRoot "pysidedeploy.spec") `
+            --mode onefile --no-install --no-warn
+        if ($LASTEXITCODE -ne 0) { throw "免安装单文件构建失败。" }
+    }
+    finally {
+        Pop-Location
+    }
+
+    $builtExe = Join-Path $buildRoot "dist\SurveyingDataManager.exe"
+    if (-not (Test-Path -LiteralPath $builtExe)) {
+        throw "未找到免安装单文件：$builtExe"
+    }
+    $outputDir = Join-Path $projectRoot "dist"
+    New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+    $finalExe = Join-Path $outputDir "SurveyingDataManager.exe"
+    Copy-Item -LiteralPath $builtExe -Destination $finalExe -Force
+    Write-Host "免安装单文件完成：$finalExe"
+}
