@@ -63,8 +63,14 @@ py -3.13 -m venv .venv
 ├─ .venv/                     # 项目级虚拟环境
 ├─ assets/
 │  └─ app.ico                 # 应用与打包图标
+├─ installer/
+│  ├─ setup.iss               # Inno Setup 安装包脚本
+│  └─ ChineseSimplified.isl   # 安装向导简体中文
 ├─ scripts/
-│  └─ build.ps1               # 单文件打包脚本
+│  ├─ build.ps1               # 单文件/便携版打包脚本
+│  ├─ build_installer.ps1     # 安装包构建脚本
+│  ├─ install-readme.txt      # 安装后说明
+│  └─ portable-readme.txt     # 便携版说明
 ├─ src/
 │  ├─ main.py                 # 程序入口
 │  └─ surveying/
@@ -132,6 +138,22 @@ dist\SurveyingDataManager-Portable.zip
 
 便携版包含 Python、PySide6、VC 运行库及全部 Qt 依赖，解压后直接双击 `SurveyingDataManager.exe` 即可运行，不需要安装 Python、配置环境变量或联网。
 
+### Windows 安装包
+
+安装 Inno Setup 6 后执行：
+
+```powershell
+.\scripts\build_installer.ps1
+```
+
+输出：
+
+```text
+dist\SurveyingDataManager-Setup-1.1.0.exe
+```
+
+安装包默认按当前用户安装到 `%LOCALAPPDATA%\Programs\SurveyingDataManager`，无需管理员权限；也可以选择为所有用户安装。安装过程中会创建开始菜单和桌面快捷方式，并提供标准卸载程序。安装包已包含全部运行依赖，目标电脑无需安装 Python 或配置环境。
+
 如需使用国内 PyPI 镜像：
 
 ```powershell
@@ -152,8 +174,9 @@ dist\SurveyingDataManager-Portable.zip
 - onefile 模式会在运行时解压到临时目录，因此启动速度略慢于目录模式，但便于单文件分享。
 - 应用数据、导出文件和工程文件均保存在用户选择的路径，不会写入安装目录。
 - 如需生成工程文件示例，可在软件中点击“载入示例”，再使用“保存工程”。
-- 单文件版每次启动会先解压运行库，部分低配置电脑或开启实时杀毒扫描时启动较慢；对稳定性要求高时建议分发便携版 ZIP。
+- 单文件版每次启动会先解压运行库，部分低配置电脑或开启实时杀毒扫描时启动较慢；对稳定性要求高时建议分发安装包或便携版 ZIP。
 - 文件选择使用 Qt 内置对话框，避免 Windows 网络驱动器或第三方 Shell 扩展导致文件对话框卡死。
+- 安装包未使用商业代码签名证书，Windows SmartScreen 可能首次提示“未知发布者”；选择“更多信息 → 仍要运行”即可。正式发布建议购买代码签名证书。
 
 ## 兼容性与排查
 
