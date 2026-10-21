@@ -2,6 +2,10 @@
 
 基于 Python + PySide6 的 Windows 桌面水准测量数据处理软件，支持闭合/附合水准路线计算、闭合差评定、重复观测误差分析与 CSV / Excel 成果导出。项目使用项目级 `.venv` 管理环境，代码位于 `src` 目录并按业务层、服务层、界面层分层。
 
+## 下载
+
+Windows 安装包请前往 [Releases](https://github.com/sqqsnb888-code/surveying-data-manager/releases)。
+
 ## 功能
 
 - 闭合水准路线与附合水准路线计算
