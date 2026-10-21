@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.build/
+*.dist/
+*.onefile-build/
+src/deployment/
+*.log
+nuitka-crash-report.xml
+*.egg-info/
+.vscode/
+.idea/
