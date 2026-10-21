@@ -18,7 +18,7 @@
 ## 环境
 
 - Windows 10 / 11
-- Python 3.10 及以上（本项目已在 Python 3.14 验证，构建推荐 Python 3.13）
+- Python 3.10 及以上（本项目已在 Python 3.13 验证）
 - PySide6 6.12.0
 - openpyxl 3.1.5
 
@@ -27,13 +27,13 @@
 ## 快速开始
 
 ```powershell
-py -3.14 -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe src\main.py
 ```
 
-如使用其他受支持的 Python 版本，将 `py -3.14` 替换为对应命令即可，例如 `py -3.13`。
+如使用其他受支持的 Python 版本，将 `py -3.13` 替换为对应命令即可。
 
 如果不激活虚拟环境，也可以直接使用 `.venv\Scripts\python.exe` 运行。
 
@@ -117,6 +117,21 @@ $env:QT_QPA_PLATFORM = "offscreen"
 dist\SurveyingDataManager.exe
 ```
 
+同时生成免安装便携版（推荐分发给其他电脑）：
+
+```powershell
+.\scripts\build.ps1 -Portable
+```
+
+输出：
+
+```text
+dist\SurveyingDataManager-Portable\
+dist\SurveyingDataManager-Portable.zip
+```
+
+便携版包含 Python、PySide6、VC 运行库及全部 Qt 依赖，解压后直接双击 `SurveyingDataManager.exe` 即可运行，不需要安装 Python、配置环境变量或联网。
+
 如需使用国内 PyPI 镜像：
 
 ```powershell
@@ -137,6 +152,16 @@ dist\SurveyingDataManager.exe
 - onefile 模式会在运行时解压到临时目录，因此启动速度略慢于目录模式，但便于单文件分享。
 - 应用数据、导出文件和工程文件均保存在用户选择的路径，不会写入安装目录。
 - 如需生成工程文件示例，可在软件中点击“载入示例”，再使用“保存工程”。
+- 单文件版每次启动会先解压运行库，部分低配置电脑或开启实时杀毒扫描时启动较慢；对稳定性要求高时建议分发便携版 ZIP。
+- 文件选择使用 Qt 内置对话框，避免 Windows 网络驱动器或第三方 Shell 扩展导致文件对话框卡死。
+
+## 兼容性与排查
+
+- 支持 Windows 10 / Windows 11 64 位。32 位 Windows、Windows 7 不受 PySide6 6.12 支持。
+- 启动画面、日志和全局异常处理已内置，启动阶段不会出现无反馈窗口。
+- 诊断日志位于 `%LOCALAPPDATA%\SurveyingTools\测量数据管理系统\logs\app.log`，也可通过菜单“帮助 → 打开诊断日志目录”打开。
+- 若某台电脑上单文件 EXE 启动缓慢，请改用 `SurveyingDataManager-Portable.zip` 解压版，并将整个文件夹加入杀毒软件信任区。
+- 遇到无响应时，请提供日志文件、Windows 版本和具体操作步骤，便于定位。
 
 ## 数据文件
 

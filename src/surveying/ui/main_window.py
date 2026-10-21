@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import logging
 import re
 from datetime import date
 from pathlib import Path
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -23,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from surveying import __version__
+from surveying.diagnostics import get_log_directory
 from surveying.domain.error_analysis import ObservationStats, parse_observation_text
 from surveying.domain.leveling import LevelingResult, calculate_leveling
 from surveying.domain.models import DomainError, LevelingProject
@@ -38,6 +40,8 @@ from .analysis_page import AnalysisPage
 from .export_page import ExportPage
 from .leveling_page import LevelingPage
 
+
+logger = logging.getLogger(__name__)
 
 PAGE_META = [
     ("数据输入与计算", "录入工程信息与测段观测值，按距离比例分配闭合差。"),
@@ -93,6 +97,9 @@ class MainWindow(QMainWindow):
         self.about_action = QAction("关于", self)
         self.about_action.triggered.connect(self._show_about)
 
+        self.open_log_action = QAction("打开诊断日志目录", self)
+        self.open_log_action.triggered.connect(self._open_log_directory)
+
         file_menu = self.menuBar().addMenu("文件")
         file_menu.addAction(self.new_action)
         file_menu.addAction(self.open_action)
@@ -105,6 +112,7 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(self.exit_action)
         help_menu = self.menuBar().addMenu("帮助")
+        help_menu.addAction(self.open_log_action)
         help_menu.addAction(self.about_action)
 
     def _build_ui(self) -> None:
@@ -270,15 +278,18 @@ class MainWindow(QMainWindow):
             self.page_subtitle.setText(PAGE_META[index][1])
 
     def _calculate(self, show_warning: bool = True):
+        logger.info("Leveling calculation started")
         try:
             project = self.leveling_page.collect_project()
             result = calculate_leveling(project)
         except DomainError as exc:
+            logger.warning("Leveling calculation rejected: %s", exc)
             self._invalidate_result()
             if show_warning:
                 QMessageBox.warning(self, "无法计算", str(exc))
             return None
         except Exception as exc:
+            logger.exception("Unexpected calculation error")
             self._invalidate_result()
             if show_warning:
                 QMessageBox.critical(self, "计算错误", f"计算过程中发生错误：{exc}")
@@ -291,17 +302,18 @@ class MainWindow(QMainWindow):
         self.export_page.set_result(project, result)
         self._update_project_chip()
         self._update_export_observation_count()
+        conclusion = "闭合差超限" if not result.is_within_tolerance else "符合限差"
         self.statusBar().showMessage(
-            f"计算完成：闭合差 {result.closure_error_mm:+.2f} mm，"
+            f"计算完成（{conclusion}）：闭合差 {result.closure_error_mm:+.2f} mm，"
             f"容许 ±{result.allowable_closure_mm:.2f} mm"
         )
-        if show_warning and not result.is_within_tolerance:
-            QMessageBox.warning(
-                self,
-                "闭合差超限",
-                "闭合差超过容许值，计算仍已完成，但成果不应直接用于生产。\n\n"
-                + "\n".join(result.warnings),
-            )
+        logger.info(
+            "Leveling calculation completed: closure_mm=%.3f allowable_mm=%.3f pass=%s segments=%d",
+            result.closure_error_mm,
+            result.allowable_closure_mm,
+            result.is_within_tolerance,
+            len(result.segments),
+        )
         return project, result
 
     def _invalidate_result(self) -> None:
@@ -407,6 +419,7 @@ class MainWindow(QMainWindow):
             "打开测量工程",
             start_dir,
             "测量工程文件 (*.json);;所有文件 (*.*)",
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if not filename:
             return False
@@ -474,6 +487,7 @@ class MainWindow(QMainWindow):
             "保存测量工程",
             str(start_dir / default_name),
             "测量工程文件 (*.json)",
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if not filename:
             return False
@@ -524,6 +538,7 @@ class MainWindow(QMainWindow):
             "导出 CSV",
             str(self._default_export_path(project.name, "csv")),
             "CSV 文件 (*.csv)",
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if not filename:
             return
@@ -548,6 +563,7 @@ class MainWindow(QMainWindow):
             "导出 Excel",
             str(self._default_export_path(project.name, "xlsx")),
             "Excel 工作簿 (*.xlsx)",
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if not filename:
             return
@@ -578,6 +594,14 @@ class MainWindow(QMainWindow):
     def _ensure_suffix(filename: str, suffix: str) -> Path:
         path = Path(filename)
         return path if path.suffix.lower() == suffix else path.with_suffix(suffix)
+
+    def _open_log_directory(self) -> None:
+        log_dir = get_log_directory()
+        if log_dir is None:
+            QMessageBox.information(self, "诊断日志", "诊断日志尚未初始化。")
+            return
+        log_dir.mkdir(parents=True, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(log_dir)))
 
     def _show_about(self) -> None:
         QMessageBox.about(

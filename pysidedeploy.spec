@@ -17,5 +17,5 @@ excluded_qml_plugins =
 
 [nuitka]
 mode = onefile
-extra_args = --quiet --noinclude-qt-translations --windows-console-mode=disable --assume-yes-for-downloads --experimental=force-dependencies-pefile
+extra_args = --quiet --noinclude-qt-translations --windows-console-mode=disable --assume-yes-for-downloads --experimental=force-dependencies-pefile --onefile-windows-splash-screen-image=assets/splash.png
 
