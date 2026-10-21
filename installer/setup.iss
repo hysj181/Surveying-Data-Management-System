@@ -42,7 +42,7 @@ Name: "chinesesimp"; MessagesFile: "ChineseSimplified.isl"
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加任务："
 
 [Files]
-Source: "..\dist\SurveyingDataManager-Portable\*"; DestDir: "{app}"; Excludes: "portable-readme.txt"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\scripts\install-readme.txt"; DestDir: "{app}"; DestName: "使用说明.txt"; Flags: ignoreversion
 
 [Icons]

@@ -2,11 +2,11 @@
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$portableExe = Join-Path $projectRoot "dist\SurveyingDataManager-Portable\SurveyingDataManager.exe"
+$appExe = Join-Path $projectRoot "build\app\SurveyingDataManager.exe"
 $setupScript = Join-Path $projectRoot "installer\setup.iss"
 
-if (-not (Test-Path -LiteralPath $portableExe)) {
-    throw "未找到应用文件。请先运行 scripts\build.ps1 -Portable 生成安装源目录。"
+if (-not (Test-Path -LiteralPath $appExe)) {
+    throw "未找到应用文件。请先运行 scripts\build.ps1 生成应用文件。"
 }
 
 $isccCandidates = @(

@@ -13,14 +13,15 @@
 - 导出带 BOM 的 CSV、格式化的 Excel 工作簿（工程概况、水准计算、误差分析）
 - 工程文件保存与打开（JSON），包含测段、控制点和观测列
 - 未保存更改提示、新建 / 打开 / 保存 / 另存为、快捷键和示例数据
-- 使用 PySide6 `pyside6-deploy` 打包为单文件 EXE
+- 使用 PySide6 `pyside6-deploy` + Inno Setup 打包为 Windows 安装程序
 
 ## 环境
 
 - Windows 10 / 11
 - Python 3.10 及以上（本项目已在 Python 3.13 验证）
-- PySide6 6.12.0
+- PySide6-Essentials 6.12.0
 - openpyxl 3.1.5
+- Inno Setup 6（仅构建安装包时需要）
 
 运行依赖记录在 `requirements.txt`，测试依赖记录在 `requirements-dev.txt`，打包依赖记录在 `requirements-build.txt`。`.venv`、`dist`、缓存和打包中间文件均已加入 `.gitignore`，克隆后按依赖文件重建环境即可。
 
@@ -67,10 +68,9 @@ py -3.13 -m venv .venv
 │  ├─ setup.iss               # Inno Setup 安装包脚本
 │  └─ ChineseSimplified.isl   # 安装向导简体中文
 ├─ scripts/
-│  ├─ build.ps1               # 单文件/便携版打包脚本
+│  ├─ build.ps1               # 应用文件构建脚本
 │  ├─ build_installer.ps1     # 安装包构建脚本
-│  ├─ install-readme.txt      # 安装后说明
-│  └─ portable-readme.txt     # 便携版说明
+│  └─ install-readme.txt      # 安装后说明
 ├─ src/
 │  ├─ main.py                 # 程序入口
 │  └─ surveying/
@@ -109,50 +109,29 @@ $env:QT_QPA_PLATFORM = "offscreen"
 
 测试覆盖水准计算、限差判定、观测统计、粗差检测、工程文件读写、CSV / Excel 导出和界面冒烟。
 
-## 打包为单文件
+## 构建 Windows 安装包
 
-`pysidedeploy.spec` 已配置为 onefile 模式、无控制台窗口，并指定应用图标。执行：
+先构建应用文件：
 
 ```powershell
 .\scripts\build.ps1
 ```
 
-构建成功后生成单文件：
-
-```text
-dist\SurveyingDataManager.exe
-```
-
-同时生成免安装便携版（推荐分发给其他电脑）：
-
-```powershell
-.\scripts\build.ps1 -Portable
-```
-
-输出：
-
-```text
-dist\SurveyingDataManager-Portable\
-dist\SurveyingDataManager-Portable.zip
-```
-
-便携版包含 Python、PySide6、VC 运行库及全部 Qt 依赖，解压后直接双击 `SurveyingDataManager.exe` 即可运行，不需要安装 Python、配置环境变量或联网。
-
-### Windows 安装包
-
-安装 Inno Setup 6 后执行：
+再构建安装包（需先安装 Inno Setup 6）：
 
 ```powershell
 .\scripts\build_installer.ps1
 ```
 
-输出：
+最终输出：
 
 ```text
 dist\SurveyingDataManager-Setup-1.1.0.exe
 ```
 
 安装包默认按当前用户安装到 `%LOCALAPPDATA%\Programs\SurveyingDataManager`，无需管理员权限；也可以选择为所有用户安装。安装过程中会创建开始菜单和桌面快捷方式，并提供标准卸载程序。安装包已包含全部运行依赖，目标电脑无需安装 Python 或配置环境。
+
+中间应用文件生成在 `build\app`，已加入 `.gitignore`；安装包构建完成后可删除该目录。
 
 如需使用国内 PyPI 镜像：
 
@@ -170,11 +149,8 @@ dist\SurveyingDataManager-Setup-1.1.0.exe
 
 - `pyside6-deploy` 使用 Nuitka 编译，首次构建会按 `requirements-build.txt` 安装 `Nuitka==4.1.1` 并可能下载编译工具，耗时较长。
 - 构建需要可用的 C/C++ 编译环境；Windows 推荐安装 Visual Studio Build Tools（MSVC）。
-- Nuitka 的 MSVC 工具链对中文路径支持不稳定。当项目路径包含中文时，`build.ps1` 会自动将源码复制到 `%PUBLIC%\SurveyingDataManagerBuild`，并在 ASCII 路径下使用独立虚拟环境完成编译，最后把 EXE 复制回项目 `dist` 目录。
-- onefile 模式会在运行时解压到临时目录，因此启动速度略慢于目录模式，但便于单文件分享。
+- Nuitka 的 MSVC 工具链对中文路径支持不稳定。当项目路径包含中文时，`build.ps1` 会自动将源码复制到 `%PUBLIC%\SurveyingDataManagerBuild<版本>`，在 ASCII 路径下完成编译，再复制回 `build\app`。
 - 应用数据、导出文件和工程文件均保存在用户选择的路径，不会写入安装目录。
-- 如需生成工程文件示例，可在软件中点击“载入示例”，再使用“保存工程”。
-- 单文件版每次启动会先解压运行库，部分低配置电脑或开启实时杀毒扫描时启动较慢；对稳定性要求高时建议分发安装包或便携版 ZIP。
 - 文件选择使用 Qt 内置对话框，避免 Windows 网络驱动器或第三方 Shell 扩展导致文件对话框卡死。
 - 安装包未使用商业代码签名证书，Windows SmartScreen 可能首次提示“未知发布者”；选择“更多信息 → 仍要运行”即可。正式发布建议购买代码签名证书。
 
@@ -183,7 +159,7 @@ dist\SurveyingDataManager-Setup-1.1.0.exe
 - 支持 Windows 10 / Windows 11 64 位。32 位 Windows、Windows 7 不受 PySide6 6.12 支持。
 - 启动画面、日志和全局异常处理已内置，启动阶段不会出现无反馈窗口。
 - 诊断日志位于 `%LOCALAPPDATA%\SurveyingTools\测量数据管理系统\logs\app.log`，也可通过菜单“帮助 → 打开诊断日志目录”打开。
-- 若某台电脑上单文件 EXE 启动缓慢，请改用 `SurveyingDataManager-Portable.zip` 解压版，并将整个文件夹加入杀毒软件信任区。
+- 若某台电脑上启动异常，请将安装目录加入杀毒软件信任区，并查看诊断日志。
 - 遇到无响应时，请提供日志文件、Windows 版本和具体操作步骤，便于定位。
 
 ## 数据文件

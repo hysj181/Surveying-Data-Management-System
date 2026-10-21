@@ -1,7 +1,6 @@
 ﻿param(
     [string]$IndexUrl = "",
-    [switch]$SkipInstall,
-    [switch]$Portable
+    [switch]$SkipInstall
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,54 +93,23 @@ Push-Location $buildRoot
 try {
     & (Join-Path $buildRoot ".venv\Scripts\pyside6-deploy.exe") `
         -c (Join-Path $buildRoot "pysidedeploy.spec") `
-        --mode onefile --no-install --no-warn
-    if ($LASTEXITCODE -ne 0) { throw "打包失败。" }
+        --mode standalone --no-install --no-warn
+    if ($LASTEXITCODE -ne 0) { throw "应用文件构建失败。" }
 }
 finally {
     Pop-Location
 }
 
-$builtExe = Join-Path $buildRoot "dist\SurveyingDataManager.exe"
-if (-not (Test-Path -LiteralPath $builtExe)) {
-    throw "未找到打包产物：$builtExe"
+$builtApp = Join-Path $buildRoot "dist\SurveyingDataManager.dist"
+if (-not (Test-Path -LiteralPath $builtApp)) {
+    throw "未找到应用文件：$builtApp"
 }
 
-$running = Get-Process -Name "SurveyingDataManager" -ErrorAction SilentlyContinue
-if ($running) {
-    throw "检测到 SurveyingDataManager 正在运行，请先关闭程序后再复制打包产物。"
-}
+$appDir = Join-Path $projectRoot "build\app"
+Remove-Item -LiteralPath $appDir -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path (Split-Path $appDir -Parent) | Out-Null
+Copy-Item -LiteralPath $builtApp -Destination $appDir -Recurse
+Rename-Item -LiteralPath (Join-Path $appDir "main.exe") -NewName "SurveyingDataManager.exe"
+Remove-Item -LiteralPath $builtApp -Recurse -Force -ErrorAction SilentlyContinue
 
-$outputDir = Join-Path $projectRoot "dist"
-New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
-$finalExe = Join-Path $outputDir "SurveyingDataManager.exe"
-Copy-Item -LiteralPath $builtExe -Destination $finalExe -Force
-Write-Host "单文件完成：$finalExe"
-
-if ($Portable) {
-    Push-Location $buildRoot
-    try {
-        & (Join-Path $buildRoot ".venv\Scripts\pyside6-deploy.exe") `
-            -c (Join-Path $buildRoot "pysidedeploy.spec") `
-            --mode standalone --no-install --no-warn
-        if ($LASTEXITCODE -ne 0) { throw "便携版打包失败。" }
-    }
-    finally {
-        Pop-Location
-    }
-
-    $portableSource = Join-Path $buildRoot "dist\SurveyingDataManager.dist"
-    if (-not (Test-Path -LiteralPath $portableSource)) {
-        throw "未找到便携版目录：$portableSource"
-    }
-
-    $portableDir = Join-Path $outputDir "SurveyingDataManager-Portable"
-    Remove-Item -LiteralPath $portableDir -Recurse -Force -ErrorAction SilentlyContinue
-    Copy-Item -LiteralPath $portableSource -Destination $portableDir -Recurse
-    Rename-Item -LiteralPath (Join-Path $portableDir "main.exe") -NewName "SurveyingDataManager.exe"
-    Copy-Item -LiteralPath (Join-Path $projectRoot "scripts\portable-readme.txt") -Destination $portableDir -Force
-
-    $zipPath = Join-Path $outputDir "SurveyingDataManager-Portable.zip"
-    Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue
-    Compress-Archive -Path (Join-Path $portableDir "*") -DestinationPath $zipPath -CompressionLevel Optimal
-    Write-Host "便携版完成：$zipPath"
-}
+Write-Host "应用文件完成：$appDir"
